@@ -1,0 +1,89 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "serverfarms_viewerhost_name": {
+            "defaultValue": "viewerhost",
+            "type": "String"
+        },
+        "topics_az204_egtopic_153473750_name": {
+            "defaultValue": "az204-egtopic-153473750",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.EventGrid/topics",
+            "apiVersion": "2025-07-15-preview",
+            "name": "[parameters('topics_az204_egtopic_153473750_name')]",
+            "location": "eastus",
+            "sku": {
+                "name": "Basic"
+            },
+            "kind": "Azure",
+            "identity": {
+                "type": "None"
+            },
+            "properties": {
+                "minimumTlsVersionAllowed": "1.0",
+                "inputSchema": "EventGridSchema",
+                "publicNetworkAccess": "Enabled",
+                "disableLocalAuth": false,
+                "dataResidencyBoundary": "WithinGeopair"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2024-11-01",
+            "name": "[parameters('serverfarms_viewerhost_name')]",
+            "location": "East US",
+            "sku": {
+                "name": "F1",
+                "tier": "Free",
+                "size": "F1",
+                "family": "F",
+                "capacity": 0
+            },
+            "kind": "app",
+            "properties": {
+                "perSiteScaling": false,
+                "elasticScaleEnabled": false,
+                "maximumElasticWorkerCount": 1,
+                "isSpot": false,
+                "reserved": false,
+                "isXenon": false,
+                "hyperV": false,
+                "targetWorkerCount": 0,
+                "targetWorkerSizeId": 0,
+                "zoneRedundant": false,
+                "asyncScalingEnabled": false
+            }
+        },
+        {
+            "type": "Microsoft.EventGrid/topics/eventSubscriptions",
+            "apiVersion": "2025-07-15-preview",
+            "name": "[concat(parameters('topics_az204_egtopic_153473750_name'), '/az204ViewerSub')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventGrid/topics', parameters('topics_az204_egtopic_153473750_name'))]"
+            ],
+            "properties": {
+                "destination": {
+                    "properties": {
+                        "endpointUrl": null,
+                        "endpointBaseUrl": "https://az204-egsite-153473750.azurewebsites.net/api/updates",
+                        "maxEventsPerBatch": 1,
+                        "preferredBatchSizeInKilobytes": 64
+                    },
+                    "endpointType": "WebHook"
+                },
+                "filter": {},
+                "eventDeliverySchema": "EventGridSchema",
+                "retryPolicy": {
+                    "maxDeliveryAttempts": 30,
+                    "eventTimeToLiveInMinutes": 1440
+                }
+            }
+        }
+    ]
+}
